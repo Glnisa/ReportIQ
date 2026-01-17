@@ -1,0 +1,20 @@
+# ReportIQ Dependencies
+# GUI Framework
+customtkinter>=5.2.0
+
+# Data Processing
+pandas>=2.0.0
+openpyxl>=3.1.0
+
+# Charts & Visualization
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Word Document Generation
+python-docx>=0.8.11
+
+# Image Processing
+Pillow>=10.0.0
+
+# Date handling
+python-dateutil>=2.8.0
