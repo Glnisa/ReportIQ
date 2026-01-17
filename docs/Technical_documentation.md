@@ -8,6 +8,7 @@
 ## 2. Use Case View
 
 ### 2.1 Use Case Diagram
+
 ```mermaid
 usecaseDiagram
     actor User as "Security Analyst"
@@ -50,6 +51,7 @@ usecaseDiagram
 The Domain Model represents the conceptual entities and their relationships within the ReportIQ ecosystem.
 
 ### 3.1 Domain Class Diagram
+
 ```mermaid
 classDiagram
     class Application {
@@ -132,6 +134,7 @@ classDiagram
 The application defines a clear separation of concerns, similar to Model-View-Controller (MVC).
 
 ### 4.1 Component Diagram
+
 ```mermaid
 graph TD
     subgraph GUI [Presentation Layer]
