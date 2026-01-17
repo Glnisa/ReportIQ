@@ -131,4 +131,4 @@ MIT License
 
 ## Author
 
-Created with ReportIQ 🛡️
+Gülnisa Yıldırım
