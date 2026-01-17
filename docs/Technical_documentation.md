@@ -10,18 +10,18 @@
 ### 2.1 Use Case Diagram
 
 ```mermaid
-usecaseDiagram
-    actor User as "Security Analyst"
+graph LR
+    User("Security Analyst")
     
-    package "ReportIQ System" {
-        usecase "Load Excel Data" as UC1
-        usecase "Map Columns" as UC2
-        usecase "Filter Vulnerabilities" as UC3
-        usecase "Select Report Sections" as UC4
-        usecase "Generate Report" as UC5
-        usecase "Switch Language" as UC6
-        usecase "View Data Preview" as UC7
-    }
+    subgraph "ReportIQ System"
+        UC1([Load Excel Data])
+        UC2([Map Columns])
+        UC3([Filter Vulnerabilities])
+        UC4([Select Report Sections])
+        UC5([Generate Report])
+        UC6([Switch Language])
+        UC7([View Data Preview])
+    end
 
     User --> UC1
     User --> UC3
@@ -29,8 +29,8 @@ usecaseDiagram
     User --> UC5
     User --> UC6
     
-    UC1 ..> UC2 : <<include>>
-    UC3 ..> UC7 : <<include>>
+    UC1 -.->|include| UC2
+    UC3 -.->|include| UC7
 ```
 
 ### 2.2 Use Case Descriptions
