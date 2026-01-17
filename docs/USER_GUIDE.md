@@ -94,5 +94,9 @@ Uygulamanın sağ üst köşesindeki **TR | EN** düğmesi ile arayüzü ve rapo
 
 ---
 
+## 📞 Destek
 
-ReportIQ 🛡️ 
+Herhangi bir hata veya öneri için geliştirici ekibiyle iletişime geçebilirsiniz.
+
+ReportIQ 🛡️ - Güvenliğiniz İçin Akıllı Raporlama
+
