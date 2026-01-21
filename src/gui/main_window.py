@@ -52,6 +52,17 @@ class MainWindow(ctk.CTk):
         # Build UI
         self._create_widgets()
         self._bind_events()
+        self._set_window_icon()
+    
+    def _set_window_icon(self) -> None:
+        """Set application icon for Windows"""
+        try:
+            # Look for icon in src/assets
+            icon_path = Path(__file__).parent.parent / "assets" / "icon.ico"
+            if icon_path.exists():
+                self.iconbitmap(str(icon_path))
+        except Exception:
+            pass
     
     def _create_widgets(self) -> None:
         """Create all UI widgets"""
@@ -179,9 +190,9 @@ class MainWindow(ctk.CTk):
         self.filter_options_frame = ctk.CTkFrame(self.filter_scroll, fg_color="transparent")
         self.filter_options_frame.pack(fill="x", pady=(10, 0))
         
-        # Placeholder message
+        # Placeholder message (Now a child of filter_scroll for safety)
         self.filter_placeholder = ctk.CTkLabel(
-            self.filter_options_frame,
+            self.filter_scroll,
             text=t("no_file_selected"),
             font=Styles.FONTS["body"],
             text_color=Styles.COLORS["text_muted"]
@@ -218,7 +229,19 @@ class MainWindow(ctk.CTk):
             font=Styles.FONTS["button"],
             height=36
         )
-        self.browse_btn.pack(fill="x", padx=15, pady=(0, 10))
+        self.browse_btn.pack(fill="x", padx=15, pady=(0, 5))
+        
+        # Remove button (initially hidden or disabled)
+        self.remove_btn = ctk.CTkButton(
+            file_frame,
+            text=t("remove_file"),
+            command=self._on_remove_file,
+            **Styles.BUTTON_STYLES["secondary"],
+            font=Styles.FONTS["button"],
+            height=36,
+            state="disabled"
+        )
+        self.remove_btn.pack(fill="x", padx=15, pady=(0, 10))
         
         # File path display
         self.file_path_label = ctk.CTkLabel(
@@ -455,6 +478,7 @@ class MainWindow(ctk.CTk):
         
         # Update buttons
         self.browse_btn.configure(text=t("browse"))
+        self.remove_btn.configure(text=t("remove_file"))
         self.file_label.configure(text=t("select_file"))
         self.select_all_btn.configure(text=t("select_all"))
         self.clear_all_btn.configure(text=t("clear_all"))
@@ -515,6 +539,7 @@ class MainWindow(ctk.CTk):
                 text=f"✓ {filename}",
                 text_color=Styles.COLORS["success"]
             )
+            self.remove_btn.configure(state="normal")
             
             # Initialize filter engine
             self.filter_engine = FilterEngine(self.data_loader)
@@ -532,6 +557,32 @@ class MainWindow(ctk.CTk):
                 text=f"✗ {message}",
                 text_color=Styles.COLORS["danger"]
             )
+            self.remove_btn.configure(state="disabled")
+
+    def _on_remove_file(self) -> None:
+        """Handle file removal"""
+        self.data_loader.clear()
+        self.file_path = None
+        self.filter_engine = None
+        
+        # Reset UI
+        self.file_path_label.configure(text="", text_color=Styles.COLORS["text_muted"])
+        self.remove_btn.configure(state="disabled")
+        
+        # Clear filter options
+        for widget in self.filter_options_frame.winfo_children():
+            widget.destroy()
+        self.filter_vars.clear()
+        
+        # Show placeholder
+        self.filter_placeholder.pack(pady=30)
+        
+        # Reset counts
+        self.filtered_count_label.configure(text="")
+        self.total_count_label.configure(text="")
+        
+        # Reset preview
+        self._update_preview_placeholder()
     
     def _populate_filter_options(self) -> None:
         """Populate filter options based on loaded data"""
@@ -556,7 +607,8 @@ class MainWindow(ctk.CTk):
             "status",
             t("status"),
             self.data_loader.get_statuses(),
-            preselect=self.data_loader.get_open_status_values()
+            preselect=self.data_loader.get_open_status_values(),
+            show_shortcuts=True
         )
         
         # Priority filter
@@ -572,27 +624,35 @@ class MainWindow(ctk.CTk):
             self._create_filter_group(
                 "tool",
                 t("tool_source"),
-                tools[:15]  # Limit to 15 for display
+                tools,
+                show_search=True
             )
         
         # Year filter
         years = self.data_loader.get_years()
-        if years:
-            self._create_year_filter(years)
+        if not years:
+            years = [2021, 2022, 2023, 2024, 2025, 2026]
+            
+        self._create_filter_group(
+            "year",
+            t("year"),
+            [str(y) for y in years],
+            show_search=False
+        )
         
-        # Department filter (dropdown for many values)
+        # Department filter
         depts = self.data_loader.get_departments()
-        if depts and len(depts) > 5:
-            self._create_dropdown_filter(
-                "department",
-                t("department"),
-                ["All"] + depts
+        if depts:
+            self._create_filter_group(
+                "department", 
+                t("department"), 
+                depts,
+                show_search=True
             )
-        elif depts:
-            self._create_filter_group("department", t("department"), depts)
     
     def _create_filter_group(self, filter_name: str, title: str, 
-                              options: List[str], preselect: List[str] = None) -> None:
+                               options: List[str], preselect: List[str] = None,
+                               show_search: bool = False, show_shortcuts: bool = False) -> None:
         """Create a group of checkboxes for a filter"""
         if not options:
             return
@@ -604,24 +664,81 @@ class MainWindow(ctk.CTk):
         )
         frame.pack(fill="x", pady=(0, 8))
         
+        # Header frame for title and search/shortcuts
+        header_frame = ctk.CTkFrame(frame, fg_color="transparent")
+        header_frame.pack(fill="x", padx=10, pady=(8, 5))
+        
         # Title
         title_label = ctk.CTkLabel(
-            frame,
+            header_frame,
             text=title,
             font=Styles.FONTS["body"],
             text_color=Styles.COLORS["text_primary"]
         )
-        title_label.pack(anchor="w", padx=10, pady=(8, 5))
+        title_label.pack(side="left")
+
+        # Search bar (Placed beside title if enabled)
+        search_var = None
+        if show_search:
+            search_var = ctk.StringVar()
+            search_entry = ctk.CTkEntry(
+                header_frame,
+                placeholder_text=t("search_placeholder"),
+                textvariable=search_var,
+                height=24,
+                width=140, # Increased visibility
+                font=Styles.FONTS["small"],
+                **Styles.ENTRY_STYLE
+            )
+            search_entry.pack(side="left", padx=(10, 0), expand=True, fill="x")
+
+        # Shortcuts (for Status)
+        if show_shortcuts:
+            shortcut_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
+            shortcut_frame.pack(side="right")
+            
+            open_btn = ctk.CTkButton(
+                shortcut_frame,
+                text="🔓",
+                width=24,
+                height=24,
+                command=lambda: self._select_status_group("open", filter_name, options),
+                **Styles.BUTTON_STYLES["ghost"],
+                font=("Arial", 12)
+            )
+            open_btn.pack(side="left", padx=2)
+            
+            closed_btn = ctk.CTkButton(
+                shortcut_frame,
+                text="🔒",
+                width=24,
+                height=24,
+                command=lambda: self._select_status_group("closed", filter_name, options),
+                **Styles.BUTTON_STYLES["ghost"],
+                font=("Arial", 12)
+            )
+            closed_btn.pack(side="left")
+
+        # Container for checkboxes
+        checkbox_frame = ctk.CTkFrame(frame, fg_color="transparent")
+        
+        # Search logic binding
+        if show_search and search_var:
+            search_var.trace_add("write", lambda *args: self._filter_checkboxes(checkbox_frame, search_var.get()))
+
+        checkbox_frame.pack(fill="x")
         
         # Options
-        self.filter_vars[filter_name] = {}
+        if filter_name not in self.filter_vars:
+            self.filter_vars[filter_name] = {}
+            
         for option in options:
             var = ctk.BooleanVar(value=preselect is None or option in (preselect or []))
-            self.filter_vars[filter_name][option] = var
+            self.filter_vars[filter_name][str(option)] = var
             
             cb = ctk.CTkCheckBox(
-                frame,
-                text=str(option)[:25],
+                checkbox_frame,
+                text=str(option)[:30],
                 variable=var,
                 command=self._on_filter_change,
                 font=Styles.FONTS["small"],
@@ -637,100 +754,31 @@ class MainWindow(ctk.CTk):
         
         # Add padding at bottom
         ctk.CTkFrame(frame, fg_color="transparent", height=5).pack()
+
+    def _select_status_group(self, group: str, filter_name: str, options: List[str]) -> None:
+        """Select a group of statuses (open/closed)"""
+        if group == "open":
+            target_values = [v.upper() for v in self.data_loader.OPEN_STATUSES]
+        else:
+            target_values = [v.upper() for v in self.data_loader.CLOSED_STATUSES]
+            
+        for option in options:
+            is_match = option.upper() in target_values
+            self.filter_vars[filter_name][str(option)].set(is_match)
+            
+        self._on_filter_change()
+
+    def _filter_checkboxes(self, container: ctk.CTkFrame, query: str) -> None:
+        """Filter checkboxes based on search query"""
+        query = query.lower()
+        for cb in container.winfo_children():
+            if isinstance(cb, ctk.CTkCheckBox):
+                if query in cb.cget("text").lower():
+                    cb.pack(anchor="w", padx=15, pady=2)
+                else:
+                    cb.pack_forget()
     
-    def _create_year_filter(self, years: List[int]) -> None:
-        """Create year range filter"""
-        frame = ctk.CTkFrame(
-            self.filter_options_frame,
-            fg_color=Styles.COLORS["bg_tertiary"],
-            corner_radius=6
-        )
-        frame.pack(fill="x", pady=(0, 8))
-        
-        # Title
-        title_label = ctk.CTkLabel(
-            frame,
-            text=t("year"),
-            font=Styles.FONTS["body"],
-            text_color=Styles.COLORS["text_primary"]
-        )
-        title_label.pack(anchor="w", padx=10, pady=(8, 5))
-        
-        # All years checkbox
-        self.all_years_var = ctk.BooleanVar(value=True)
-        all_years_cb = ctk.CTkCheckBox(
-            frame,
-            text=t("all_years"),
-            variable=self.all_years_var,
-            command=self._on_filter_change,
-            font=Styles.FONTS["small"],
-            fg_color=Styles.COLORS["accent_primary"],
-            hover_color="#00b494",
-            border_color=Styles.COLORS["border"],
-            text_color=Styles.COLORS["text_secondary"],
-            height=24
-        )
-        all_years_cb.pack(anchor="w", padx=15, pady=2)
-        
-        # Year dropdown
-        year_strs = [str(y) for y in years]
-        self.year_var = ctk.StringVar(value=year_strs[-1] if year_strs else "")
-        
-        year_dropdown = ctk.CTkOptionMenu(
-            frame,
-            values=year_strs,
-            variable=self.year_var,
-            command=lambda x: self._on_filter_change(),
-            font=Styles.FONTS["small"],
-            fg_color=Styles.COLORS["bg_secondary"],
-            button_color=Styles.COLORS["bg_hover"],
-            button_hover_color=Styles.COLORS["accent_primary"],
-            dropdown_fg_color=Styles.COLORS["bg_secondary"],
-            dropdown_hover_color=Styles.COLORS["bg_hover"],
-            text_color=Styles.COLORS["text_primary"],
-            width=100,
-            height=28
-        )
-        year_dropdown.pack(anchor="w", padx=15, pady=(5, 10))
     
-    def _create_dropdown_filter(self, filter_name: str, title: str, options: List[str]) -> None:
-        """Create a dropdown filter for many options"""
-        frame = ctk.CTkFrame(
-            self.filter_options_frame,
-            fg_color=Styles.COLORS["bg_tertiary"],
-            corner_radius=6
-        )
-        frame.pack(fill="x", pady=(0, 8))
-        
-        # Title
-        title_label = ctk.CTkLabel(
-            frame,
-            text=title,
-            font=Styles.FONTS["body"],
-            text_color=Styles.COLORS["text_primary"]
-        )
-        title_label.pack(anchor="w", padx=10, pady=(8, 5))
-        
-        # Dropdown
-        var = ctk.StringVar(value="All")
-        self.filter_vars[filter_name] = var
-        
-        dropdown = ctk.CTkOptionMenu(
-            frame,
-            values=options,
-            variable=var,
-            command=lambda x: self._on_filter_change(),
-            font=Styles.FONTS["small"],
-            fg_color=Styles.COLORS["bg_secondary"],
-            button_color=Styles.COLORS["bg_hover"],
-            button_hover_color=Styles.COLORS["accent_primary"],
-            dropdown_fg_color=Styles.COLORS["bg_secondary"],
-            dropdown_hover_color=Styles.COLORS["bg_hover"],
-            text_color=Styles.COLORS["text_primary"],
-            width=220,
-            height=30
-        )
-        dropdown.pack(anchor="w", padx=10, pady=(0, 10))
     
     def _on_filter_change(self) -> None:
         """Handle filter change"""
@@ -747,20 +795,12 @@ class MainWindow(ctk.CTk):
                 selected = [k for k, v in values.items() if v.get()]
                 if selected:
                     self.filter_engine.set_filter(filter_name, selected)
-            elif isinstance(values, ctk.StringVar):
-                # Dropdown
+            elif hasattr(values, "get"): # StringVar (Legacy or specific)
                 val = values.get()
                 if val and val != "All":
                     self.filter_engine.set_filter(filter_name, [val])
         
-        # Apply year filter
-        if hasattr(self, 'all_years_var') and not self.all_years_var.get():
-            if hasattr(self, 'year_var') and self.year_var.get():
-                try:
-                    year = int(self.year_var.get())
-                    self.filter_engine.set_filter("year", [year])
-                except ValueError:
-                    pass
+        # Apply year filter (Legacy check removed as we moved year to _create_filter_group)
         
         # Update preview and counts
         self._update_preview()
@@ -919,8 +959,9 @@ class MainWindow(ctk.CTk):
             t("report_saved", path=saved_path)
         )
         
-        # Reset progress after delay
-        self.after(2000, self._reset_progress)
+        # Reset progress and UI state (Full reset to allow new file)
+        self._reset_progress()
+        self._on_remove_file()
     
     def _on_generation_error(self, error: str) -> None:
         """Handle generation error"""

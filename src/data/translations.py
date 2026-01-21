@@ -39,9 +39,25 @@ class Translations:
             "TR": "Dosya seçilmedi",
             "EN": "No file selected"
         },
+        "remove_file": {
+            "TR": "Seçimi Kaldır",
+            "EN": "Remove Selection"
+        },
         "loading_file": {
             "TR": "Dosya yükleniyor...",
             "EN": "Loading file..."
+        },
+        "search_placeholder": {
+            "TR": "Ara...",
+            "EN": "Search..."
+        },
+        "open_records": {
+            "TR": "Açık Kayıtlar",
+            "EN": "Open Records"
+        },
+        "closed_records": {
+            "TR": "Kapalı Kayıtlar",
+            "EN": "Closed Records"
         },
         
         # Filters Section

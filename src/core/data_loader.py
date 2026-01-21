@@ -74,6 +74,14 @@ class DataLoader:
         except Exception as e:
             return False, f"Error loading file: {str(e)}"
     
+    def clear(self) -> None:
+        """Clear the current data and state"""
+        self.df = None
+        self.original_df = None
+        self.file_path = None
+        self.column_map = {}
+        self._unique_values_cache.clear()
+    
     def _auto_map_columns(self) -> None:
         """Automatically map Excel columns to internal names"""
         excel_columns = list(self.df.columns)

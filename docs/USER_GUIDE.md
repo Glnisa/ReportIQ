@@ -94,6 +94,7 @@ Uygulamanın sağ üst köşesindeki **TR | EN** düğmesi ile arayüzü ve rapo
 
 ---
 
+
 ## 📞 Destek
 
 Herhangi bir hata veya öneri için geliştirici ekibiyle iletişime geçebilirsiniz.
