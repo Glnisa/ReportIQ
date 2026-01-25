@@ -248,17 +248,18 @@ class WordGenerator:
         self.document.add_paragraph()
         
         # Add descriptions from vulnerability dictionary
-        if self.vulnerability_dict and 'plugin_id' in top_vulns.columns:
+        if self.vulnerability_dict:
             self.document.add_heading(
                 self._get_label("Zafiyet Açıklamaları", "Vulnerability Descriptions"), 
                 level=2
             )
             
+            description_count = 0
             for idx, row in top_vulns.iterrows():
                 plugin_id = str(row.get('plugin_id', ''))
                 vuln_name = str(row['vulnerability'])
                 
-                # Try to get description from dictionary
+                # Try to get description from dictionary (by plugin_id)
                 description = None
                 if plugin_id and self.vulnerability_dict:
                     description = self.vulnerability_dict.get_description(
@@ -267,7 +268,15 @@ class WordGenerator:
                         ""
                     )
                 
+                # Fallback to name-based lookup
+                if not description and self.vulnerability_dict:
+                    description = self.vulnerability_dict.get_description_by_name(
+                        vuln_name,
+                        self.language
+                    )
+                
                 if description:
+                    description_count += 1
                     # Add vulnerability name as sub-heading
                     para = self.document.add_paragraph()
                     run = para.add_run(f"• {vuln_name}")
@@ -286,6 +295,11 @@ class WordGenerator:
                         rem_run.font.bold = True
                         rem_para.add_run(remediation)
                         rem_para.paragraph_format.left_indent = Inches(0.25)
+            
+            if description_count == 0:
+                # If no descriptions were found, maybe add a note or remove the heading
+                # (Keeping it simple for now)
+                pass
     
     def _add_department_breakdown(self) -> None:
         """Add department breakdown section"""

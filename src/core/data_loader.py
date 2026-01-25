@@ -26,7 +26,7 @@ class DataLoader:
         "assigned_owner": ["ASSIGNEDOWNER/GROUP", "ASSIGNED_OWNER", "Assigned Owner", "assigned_owner", "Owner"],
         "new_assigned_owner": ["NEW_ASSIGNEDOWNER/GROUP", "NEW_ASSIGNED_OWNER", "New Assigned Owner"],
         "plugin_id": ["PLUGINID", "PLUGIN_ID", "Plugin ID", "plugin_id", "PluginID"],
-        "plugin_desc": ["PLUGINDESC", "PLUGIN_DESC", "Plugin Description", "plugin_desc", "Vulnerability"],
+        "plugin_desc": ["PLUGINDESC", "PLUGIN_DESC", "Plugin Description", "plugin_desc", "Vulnerability", "PLUGINIDDESC"],
         "tool": ["TOOL", "Tool", "tool", "Source", "Scanner"],
         "port": ["PORT", "Port", "port"],
         "ip": ["IP", "ip", "IP Address", "Host"],

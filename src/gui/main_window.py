@@ -55,12 +55,13 @@ class MainWindow(ctk.CTk):
         self._set_window_icon()
     
     def _set_window_icon(self) -> None:
-        """Set application icon for Windows"""
+        """Set application icon"""
         try:
-            # Look for icon in src/assets
-            icon_path = Path(__file__).parent.parent / "assets" / "icon.ico"
-            if icon_path.exists():
-                self.iconbitmap(str(icon_path))
+            # iconbitmap often causes issues/crashes on macOS
+            if sys.platform.startswith("win"):
+                icon_path = Path(__file__).parent.parent / "assets" / "icon.ico"
+                if icon_path.exists():
+                    self.iconbitmap(str(icon_path))
         except Exception:
             pass
     
